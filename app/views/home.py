@@ -22,7 +22,7 @@ def index():
     success_tasks = task_records.filter(SyncRecord.status == 1).all()
     warning_tasks = task_records.filter(SyncRecord.status == 2).all()
     error_tasks = task_records.filter(SyncRecord.status == 3).all()
-    latest_tasks = task_records.order_by(SyncRecord.end_time.desc()).all()
+    latest_tasks = task_records.order_by(SyncRecord.begin_time.desc()).all()
     dev_updates = DevUpdate.query.order_by(DevUpdate.time.desc()).all()
     return render_template('index.html', all_tasks=all_tasks, running_tasks=running_tasks, success_tasks=success_tasks, warning_tasks=warning_tasks, error_tasks=error_tasks, latest_tasks=latest_tasks, dev_updates=dev_updates)
 
