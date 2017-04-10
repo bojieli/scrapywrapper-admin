@@ -44,7 +44,7 @@ def stop_task(name):
     if not task:
    	    abort(404)
     if not task.sync_is_in_progress:
-        return redirect(url_for('home.task', name=name))
+        abort(403)
 
     task.sync_is_in_progress = False
 
@@ -65,8 +65,9 @@ def start_task(name):
     task = Task.query.filter(Task.name == name).first()
     if not task:
    	    abort(404)
+    # stop existing task before forkng new
     if task.sync_is_in_progress:
-        return redirect(url_for('home.task', name=name))
+        stop_task(name)
 
     record = SyncRecord()
     record.task = task
