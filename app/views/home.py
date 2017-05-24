@@ -120,7 +120,7 @@ def stop_task(name):
     except Exception as e:
         print(e)
     task.last_sync_record.status = 2 # error exit
-    task.last_sync_record.end_time = datetime.now()
+    task.last_sync_record.end_time = datetime.datetime.now()
     task.save()
 
     return redirect(url_for('home.task', name=name))
@@ -138,7 +138,7 @@ def start_task(name):
 
     record = SyncRecord()
     record.task = task
-    record.begin_time = datetime.now()
+    record.begin_time = datetime.datetime.now()
     record.status = 0
 
     record.crawled_webpages = 0
@@ -154,7 +154,7 @@ def start_task(name):
     child_process = subprocess.Popen(["/root/scrapywrapper/RunSpider.sh", task.name])
     if not child_process:
         record.status = 3
-        record.end_time = datetime.now()
+        record.end_time = datetime.datetime.now()
         record.error_count = 1
         record.save()
 
@@ -191,7 +191,7 @@ def task_update_sync_status(name):
     record.updated_records = request.values.get('updated_records')
     record.saved_images = request.values.get('saved_images')
     record.error_count = request.values.get('error_count')
-    record.end_time = datetime.now()
+    record.end_time = datetime.datetime.now()
     record.save()
 
     if int(record.status) != 0:
@@ -258,7 +258,7 @@ def new_dev_update():
     update = DevUpdate()
     update.task = task
     update.title = request.values.get('title')
-    update.time = datetime.now()
+    update.time = datetime.datetime.now()
     update.content = request.values.get('content')
     update.save()
     return redirect(url_for('home.index'))
