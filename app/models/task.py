@@ -15,6 +15,8 @@ class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     # we have two non-independent foreign keys to make query easier
     name = db.Column(db.String(200))
+    resource_table = db.Column(db.String(200))
+
     sync_frequency = db.Column(db.Integer)
     sync_time = db.Column(db.Integer)
     incremental_sync = db.Column(db.Integer)

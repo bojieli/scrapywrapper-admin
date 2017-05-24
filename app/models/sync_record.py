@@ -6,6 +6,7 @@ class SyncRecord(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     task_id = db.Column(db.Integer, db.ForeignKey('tasks.id'))
+    batch_no = db.Column(db.Integer)
     begin_time = db.Column(db.DateTime)
     end_time = db.Column(db.DateTime)
 
