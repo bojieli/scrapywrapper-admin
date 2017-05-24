@@ -129,16 +129,24 @@
                             <!-- /input-group -->
                         </li>
                         <li>
-                            <a href="/"><i class="fa fa-dashboard fa-fw"></i> 控制台</a>
+                            <a href="/"><i class="fa fa-dashboard fa-fw"></i> 任务总览</a>
                         </li>
-                        <li class="active">
-                            <a href="#"><i class="fa fa-bar-chart-o fa-fw"></i> 采集项目<span class="fa arrow"></span></a>
+                        <li>
+                            <a href="{{ url_for('home.history', date=0) }}"><i class="fa fa-dashboard fa-fw"></i> 今日任务</a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('home.history', date=1) }}"><i class="fa fa-dashboard fa-fw"></i> 昨日任务</a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('home.history', date=2) }}"><i class="fa fa-dashboard fa-fw"></i> 历史任务</a>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-bar-chart-o fa-fw"></i> 采集任务配置<span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level">
                             {% for task in all_tasks %}
                                 <li><a href="{{ url_for('home.task', name=task.name) }}">{{ task.name }}</a></li>
                             {% endfor %}
                             </ul>
-                            <!-- /.nav-second-level -->
                         </li>
                     </ul>
                 </div>
