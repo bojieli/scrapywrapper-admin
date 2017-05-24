@@ -9,10 +9,31 @@ import os
 from lxml.html.clean import Cleaner
 import pytz
 import re
-
+import pymssql
+import csv
 
 mail = Mail(app)
 ts = URLSafeTimedSerializer(app.config["SECRET_KEY"])
+
+def ConnectDataLogDB():
+    dbconf = app.config['DATA_LOG_DB']
+    return pymssql.connect(dbconf['server'], dbconf['user'], dbconf['password'], dbconf['dbname'], charset="utf8")
+
+def QueryDataLogHistory(csv_handle, task, resource_table, batch_no):
+    conn = ConnectDataLogDB()
+    cursor = conn.cursor()
+    cursor.execute("SELECT DataLogHistory.batch_no, DataLogHistory.create_time, DataLogHistory.state, resource_table, resource_id, DataLogHistory.resource_content, source_url, source_content FROM DataLogHistory JOIN DataLog ON DataLogHistory.data_log_id = DataLog.ID WHERE DataLogHistory.batch_no = %s AND resource_table = %s", (batch_no, resource_table))
+    for row in cursor:
+        csv_handle.writerow([task] + list(row))
+    conn.close()
+
+def QueryDataLogAnomaly(csv_handle, task, resource_table, batch_no):
+    conn = ConnectDataLogDB()
+    cursor = conn.cursor()
+    cursor.execute("SELECT DataLogHistory.batch_no, DataLogHistory.create_time, resource_table, resource_id, DataLogAnomaly.type, column_name, column_content, comment FROM DataLogAnomaly, DataLogHistory, DataLog WHERE DataLogAnomaly.data_log_history_id = DataLogHistory.ID AND DataLogHistory.data_log_id = DataLog.ID AND DataLogHistory.batch_no = %s AND resource_table = %s", (batch_no, resource_table))
+    for row in cursor:
+        csv_handle.writerow([task] + list(row))
+    conn.close()
 
 
 def rand_str():
