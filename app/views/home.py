@@ -1,7 +1,7 @@
-from flask import Blueprint,request, redirect,url_for,render_template,flash, abort, jsonify
+from flask import Blueprint,request, redirect,url_for,render_template,flash, abort, jsonify, Response
 from flask_login import login_user, login_required, current_user, logout_user
 from app.models import Task, SyncRecord, ErrorLog, DevUpdate
-from app.utils import ts, send_confirm_mail, send_reset_password_mail
+from app.utils import ts, send_confirm_mail, send_reset_password_mail, QueryDataLogHistory, QueryDataLogAnomaly
 from flask_babel import gettext as _
 from datetime import datetime
 from sqlalchemy import union, or_
@@ -11,6 +11,9 @@ from app import app
 from flask import send_from_directory
 import os
 import signal
+import datetime
+import csv
+import io
 
 home = Blueprint('home',__name__)
 
@@ -18,13 +21,77 @@ home = Blueprint('home',__name__)
 def index():
     all_tasks = Task.query.order_by(Task.name).all()
     running_tasks = Task.query.filter(Task.sync_is_in_progress == True).all()
-    task_records = Task.query.join(SyncRecord, Task.last_sync_record_id == SyncRecord.task_id)
+    task_records = Task.query.join(SyncRecord, Task.last_sync_record_id == SyncRecord.id)
     success_tasks = task_records.filter(SyncRecord.status == 1).all()
     warning_tasks = task_records.filter(SyncRecord.status == 2).all()
     error_tasks = task_records.filter(SyncRecord.status == 3).all()
     latest_tasks = task_records.order_by(SyncRecord.begin_time.desc()).all()
     dev_updates = DevUpdate.query.order_by(DevUpdate.time.desc()).all()
     return render_template('index.html', all_tasks=all_tasks, running_tasks=running_tasks, success_tasks=success_tasks, warning_tasks=warning_tasks, error_tasks=error_tasks, latest_tasks=latest_tasks, dev_updates=dev_updates)
+
+@home.route('/history/<int:date>')
+def history(date):
+    if date == 0:
+        title = '今日任务'
+        history_records = SyncRecord.query.filter(SyncRecord.end_time >= datetime.date.today())
+    elif date == 1:
+        title = '昨日任务'
+        history_records = SyncRecord.query.filter(SyncRecord.end_time >= datetime.date.today() - datetime.timedelta(days=1)).filter(SyncRecord.begin_time < datetime.date.today())
+    elif date == 2:
+        title = '历史任务'
+        history_records = SyncRecord.query.filter(SyncRecord.begin_time < datetime.date.today() - datetime.timedelta(days=1))
+    else:
+        abort(404)
+    ordered = history_records.order_by(SyncRecord.end_time.desc()).all()
+    all_tasks = Task.query.order_by(Task.name).all()
+    return render_template('history.html', title=title, history_records=ordered, all_tasks=all_tasks)
+
+@home.route('/export/<int:export_type>/<string:records>')
+def export_records(export_type, records):
+    record_ids = map(int, records.split(','))
+    si = io.StringIO()
+    cw = csv.writer(si)
+    header = []
+    if export_type == 1:
+        header = ['任务名称', '数据表名', '采集周期（小时）']
+    elif export_type == 2:
+        header = ['任务名称', '采集批次号', '状态', '开始时间', '结束时间', '采集网页数', '采集数据总量', '新增数据量', '更新数据量', '异常数据量']
+    elif export_type == 3:
+        header = ['任务名称', '采集批次号', '采集时间', '数据状态', '数据表名', '数据ID', '数据内容', '数据源URL', '原始网页内容']
+    elif export_type == 4:
+        header = ['任务名称', '采集批次号', '采集时间', '数据表名', '数据ID', '异常类型', '异常字段名', '异常内容', '备注']
+    cw.writerow(header)
+
+    for record_id in record_ids:
+        record = SyncRecord.query.filter(SyncRecord.id == record_id).first()
+        if not record:
+            continue
+        if export_type == 1:
+            cw.writerow([record.task.name, record.task.resource_table, int(record.task.sync_frequency / 3600)])
+        elif export_type == 2:
+            record_status_map = ['运行中', '已完成', '异常终止', '失败']
+            cw.writerow([
+                record.task.name, 
+                record.batch_no,
+                record_status_map[record.status],
+                record.begin_time,
+                record.end_time,
+                record.crawled_webpages,
+                record.total_records,
+                record.new_records,
+                record.updated_records,
+                record.error_count
+                ])
+        elif export_type == 3:
+            QueryDataLogHistory(cw, record.task.name, record.task.resource_table, record.batch_no)
+        elif export_type == 4:
+            QueryDataLogAnomaly(cw, record.task.name, record.task.resource_table, record.batch_no)
+
+    csv_str = si.getvalue().strip('\r\n')
+    time = datetime.datetime.now().strftime('%Y.%m.%d_%H.%M.%S')
+    return Response(csv_str, mimetype="text/csv",
+                    headers={"Content-disposition": "attachment; filename=DataLog_" + time + ".csv"})
+
 
 @home.route('/task/<string:name>')
 def task(name):
