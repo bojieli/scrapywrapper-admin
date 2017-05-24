@@ -49,3 +49,10 @@ DEBUG_TB_PROFILER_ENABLED = True
 # Enable the template editor
 DEBUG_TB_TEMPLATE_EDITOR_ENABLED =True
 DEBUG_TB_INTERCEPT_REDIRECTS = False
+
+DATA_LOG_DB = {
+    'server': "114.215.255.52",
+    'user': "AddDataUser",
+    'password': "Dv*#d~18K",
+    'dbname': "DB_Medicine"
+}
