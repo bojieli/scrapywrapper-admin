@@ -1,7 +1,7 @@
 from flask import Blueprint,request, redirect,url_for,render_template,flash, abort, jsonify, Response
 from flask_login import login_user, login_required, current_user, logout_user
 from app.models import Task, SyncRecord, ErrorLog, DevUpdate
-from app.utils import ts, send_confirm_mail, send_reset_password_mail, QueryDataLogHistory, QueryDataLogAnomaly
+from app.utils import ts, send_confirm_mail, send_reset_password_mail, QueryDataLogHistory, QueryDataLogAnomaly, requires_auth
 from flask_babel import gettext as _
 from datetime import datetime
 from sqlalchemy import union, or_
@@ -18,6 +18,7 @@ import io
 home = Blueprint('home',__name__)
 
 @home.route('/')
+@requires_auth
 def index():
     all_tasks = Task.query.order_by(Task.name).all()
     running_tasks = Task.query.filter(Task.sync_is_in_progress == True).all()
@@ -30,6 +31,7 @@ def index():
     return render_template('index.html', all_tasks=all_tasks, running_tasks=running_tasks, success_tasks=success_tasks, warning_tasks=warning_tasks, error_tasks=error_tasks, latest_tasks=latest_tasks, dev_updates=dev_updates)
 
 @home.route('/history/<int:date>')
+@requires_auth
 def history(date):
     if date == 0:
         title = '今日任务'
@@ -47,6 +49,7 @@ def history(date):
     return render_template('history.html', title=title, history_records=ordered, all_tasks=all_tasks)
 
 @home.route('/export/<int:export_type>/<string:records>')
+@requires_auth
 def export_records(export_type, records):
     record_ids = map(int, records.split(','))
     si = io.StringIO()
@@ -94,6 +97,7 @@ def export_records(export_type, records):
 
 
 @home.route('/task/<string:name>')
+@requires_auth
 def task(name):
     if not name:
    	    abort(400)
@@ -104,6 +108,7 @@ def task(name):
     return render_template('task.html', task=task, all_tasks=all_tasks)
 
 @home.route('/task/<string:name>/stop')
+@requires_auth
 def stop_task(name):
     if not name:
    	    abort(400)
@@ -126,6 +131,7 @@ def stop_task(name):
     return redirect(url_for('home.task', name=name))
 
 @home.route('/task/<string:name>/start')
+@requires_auth
 def start_task(name):
     if not name:
    	    abort(400)
@@ -219,6 +225,7 @@ def send_static(path):
 
 @home.route('/task/new', methods=['POST'])
 @app.csrf.exempt
+@requires_auth
 def new_task():
     name = request.values.get('name')
     sync_frequency = request.values.get('freq')
@@ -250,6 +257,7 @@ def new_task():
 
 @home.route('/dev_update/new', methods=['POST'])
 @app.csrf.exempt
+@requires_auth
 def new_dev_update():
     task_name = request.values.get('task')
     task = Task.query.filter(Task.name == task_name).first()

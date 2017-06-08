@@ -11,6 +11,9 @@ import pytz
 import re
 import pymssql
 import csv
+from functools import wraps
+from flask import request, Response
+
 
 mail = Mail(app)
 ts = URLSafeTimedSerializer(app.config["SECRET_KEY"])
@@ -206,3 +209,25 @@ def validate_email(email):
     if User.query.filter_by(email=email).first():
         return ('此邮件地址已被注册！')
     return 'OK'
+
+
+# HTTP basic auth login
+
+def check_auth(username, password):
+    return username == app.config['WEB_AUTH_USER'] and password == app.config['WEB_AUTH_PASSWORD']
+
+def authenticate():
+    """Sends a 401 response that enables basic auth"""
+    return Response(
+    'Could not verify your access level for that URL.\n'
+    'You have to login with proper credentials', 401,
+    {'WWW-Authenticate': 'Basic realm="Login Required"'})
+
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or not check_auth(auth.username, auth.password):
+            return authenticate()
+        return f(*args, **kwargs)
+    return decorated

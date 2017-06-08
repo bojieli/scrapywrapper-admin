@@ -56,3 +56,7 @@ DATA_LOG_DB = {
     'password': "Dv*#d~18K",
     'dbname': "DB_Medicine"
 }
+
+
+WEB_AUTH_USER = 'admin'
+WEB_AUTH_PASSWORD = 'ZhongQing'
