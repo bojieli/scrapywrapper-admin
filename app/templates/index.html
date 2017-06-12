@@ -123,7 +123,7 @@
                                     {% if task.last_sync_record.status == 2 %}warning{% endif %}
                                     {% if task.last_sync_record.status == 3 %}danger{% endif %}
                                     ">
-                                     <td><a href=“{{ url_for('home.task', name=task.name) }}”>{{ task.name }}</a></td>
+                                     <td><a href="{{ url_for('home.task', name=task.name) }}">{{ task.name }}</a></td>
                                      <td>
                                      {% if task.sync_frequency == 3600 %}每小时
                                      {% elif task.sync_frequency == 86400 %}每天
